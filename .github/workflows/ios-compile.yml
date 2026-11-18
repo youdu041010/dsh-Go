@@ -9,13 +9,13 @@ permissions:
 
 jobs:
   device-ipa:
-    runs-on: macos-26
+    runs-on: macos-15
     timeout-minutes: 90
     defaults:
       run:
         shell: bash
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       DSH_IOS_ENGINE_WORK: ${{ github.workspace }}/../engine-work
       FLUTTER_VERSION: 3.47.7
       FLUTTER_SHA256: dd9da574c3168460550117eb0e8dd0313ae934fabf64a82a6d557fff5fd1422e
