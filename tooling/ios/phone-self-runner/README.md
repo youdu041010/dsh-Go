@@ -171,12 +171,15 @@ release is established only by terminal event 2/3.
 
 ### Explicit preparation, frame binding and operations
 
-After a real native confirmation that includes establishing screen/control
-sharing, Swift privately requests `prepareInput`. This operation is not exposed
-as a model/MCP tool. Settings checks and DDI mount probes never request it.
-Preparation invalidates any earlier native frame. Swift then obtains a screenshot,
-checks the current engine/session task grant, and recaptures/compares the screen under
-the same prepared owner before dispatching the approved input.
+`screen` and the observation returned by `open` use the still-image screenshot
+service. After the native task grant and transition to the target app, the first
+input request for that binding privately calls `prepareInput`. Preparation
+invalidates the prior native frame. Swift captures a fresh frame, verifies it
+against the reference observation, and rechecks the task grant before dispatch.
+Changing the binding clears the local preparation flag. The native session still
+verifies owned media before each input and cleans it up when the owner retires.
+`prepareInput` remains private to Swift and is never part of a settings check or
+DDI mount probe.
 
 ```json
 {"op":"prepareInput"}

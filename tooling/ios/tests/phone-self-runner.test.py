@@ -18,6 +18,19 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class PhoneBuildContracts(unittest.TestCase):
+    def test_coredevice_prepares_media_only_for_input_after_target_transition(self):
+        source = (ROOT / 'app/ios/Runner/IOSPhoneCoreActions.swift').read_text(encoding='utf-8')
+        self.assertEqual(source.count('["op": "prepareInput"]'), 1)
+        self.assertRegex(source, (
+            r'guard await consent\.waitForTarget\(request, current: live\) else \{[^}]*\}'
+            r'\s+try requireBackground\(live\)\s+(?://[^\n]*\n\s*)*'
+            r'if plan\.requiresObservation && !inputPrepared \{\s*'
+            r'_ = try await send\(\["op": "prepareInput"\], execution, current: live\)'
+            r'\s+inputPrepared = true\s*\}\s+let fresh = try await capture\(execution, current: live\)'
+        ))
+        self.assertRegex(source, r'func invalidate\(\) \{[^}]*inputPrepared = false')
+        self.assertRegex(source, r'let needsBackground = [^\n]+operation == "prepareInput"')
+
     def test_shared_bootstrap_and_state_tests_are_in_the_correct_targets(self):
         project = (ROOT / 'app/ios/Runner.xcodeproj/project.pbxproj').read_text()
         definitions = re.findall(r'^\t\t([A-F0-9]{24}) /\*.*?\*/ = \{', project, re.M)

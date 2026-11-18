@@ -24,6 +24,7 @@ final class IOSPhoneCoreActions {
   private var binding: IOSPhoneScreen.Binding?
   private var epoch: UInt64 = 0
   private var latestToken: String?
+  private var inputPrepared = false
   private var busy = false
   private(set) var lastOpenedApplication: String?
 
@@ -46,7 +47,14 @@ final class IOSPhoneCoreActions {
     return true
   }
 
-  func invalidate() { epoch &+= 1; binding = nil; latestToken = nil; lastOpenedApplication = nil; screen.invalidate() }
+  func invalidate() {
+    epoch &+= 1
+    binding = nil
+    latestToken = nil
+    inputPrepared = false
+    lastOpenedApplication = nil
+    screen.invalidate()
+  }
 
   func targetLabel(_ plan: IOSPhoneOperation, ownerID: String, sessionID: String) -> String? {
     guard let binding, binding.sessionID == sessionID,
@@ -131,11 +139,6 @@ final class IOSPhoneCoreActions {
         }
       }
 
-      // Only a fresh screen/open consent establishes the media gate. A mutation
-      // uses the already established gate; it never silently starts one.
-      if (plan.method == .screen || plan.method == .open), capabilities["touch"] == true {
-        _ = try await send(["op": "prepareInput"], execution, current: live)
-      }
       if plan.method == .open, let application {
         let opened = try await send(["op": "launch", "bundleId": application], execution, current: live)
         try require(live)
@@ -153,6 +156,13 @@ final class IOSPhoneCoreActions {
         throw IOSPhoneOperationError(message: consent.targetWaitFailureMessage)
       }
       try requireBackground(live)
+      // Read-only observations use the still-image service. Prepare the media
+      // gate once for this binding when an authorized input actually needs it.
+      // Preparation invalidates the old native frame, so capture again below.
+      if plan.requiresObservation && !inputPrepared {
+        _ = try await send(["op": "prepareInput"], execution, current: live)
+        inputPrepared = true
+      }
       let fresh = try await capture(execution, current: live)
       if plan.method == .screen {
         let output = try await observe(fresh, execution, image: plan.wantsImage, detail: plan.detail, current: live)
@@ -391,7 +401,8 @@ final class IOSPhoneCoreActions {
   private func send(_ values: [String: Any], _ execution: Execution,
                     current: @escaping () -> Bool) async throws -> IOSPhoneCoreReply {
     try require(current)
-    let needsBackground = values["nativeFrameId"] != nil || values["op"] as? String == "screenshot"
+    let operation = values["op"] as? String
+    let needsBackground = values["nativeFrameId"] != nil || operation == "screenshot" || operation == "prepareInput"
     let permitted = { current() && (!needsBackground ||
       UIApplication.shared.applicationState == .background) }
     guard permitted() else { throw IOSPhoneScreenError.cancelled }

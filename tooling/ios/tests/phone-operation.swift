@@ -11,9 +11,12 @@ import Foundation
         from: JSONSerialization.data(withJSONObject: envelope))
       return try IOSPhoneOperation(request)
     }
-    _ = try plan("screen")
-    _ = try plan("open", ["app": "com.apple.Preferences"])
-    _ = try plan("scroll", ["screen": "s1", "direction": "down"])
+    let screen = try plan("screen", ["image": false, "detail": false])
+    let open = try plan("open", ["app": "com.apple.Preferences"])
+    let apps = try plan("apps")
+    let scroll = try plan("scroll", ["screen": "s1", "direction": "down"])
+    precondition(!screen.requiresObservation && !open.requiresObservation && !apps.requiresObservation)
+    precondition(scroll.requiresObservation)
     for method in ["activate", "validate", "prepareInput", "ascii", "paste", "native"] {
       do { _ = try plan(method); fatalError("Private RPC entered the model plan") }
       catch is IOSPhoneOperationError {}
