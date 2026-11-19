@@ -2,7 +2,7 @@
 // display descriptions must not be advertised as iOS capabilities.
 const descriptions = Object.freeze({
   apps: 'iOS：查询可启动应用的名称和包名；需要本机开发者连接和仍有效的任务授权。名称不确定时先查包名；失败则请用户核对，不用虚拟 Shell 扫描 iOS 容器或修改配对。',
-  open: 'iOS：打开应用或 HTTP/HTTPS 链接（app 或 url 二选一）。应用默认走 CoreDevice；是否能读屏和输入取决于实际服务。应用打开结果不保证目标前台已核实。没有 Android 后台屏，不要使用 background:true；应用操控在任务开始时由用户原生授权一次，后续同任务无需逐次确认。URL 打开仍走单独的系统操作确认。',
+  open: 'iOS：打开应用或 HTTP/HTTPS 链接（app 或 url 二选一）。应用操控路线由本机设置和服务可用性决定，读屏和输入能力以工具结果为准。应用打开结果不保证目标前台已核实。没有 Android 后台屏，不要使用 background:true；应用操控在任务开始时由用户原生授权一次，后续同任务无需逐次确认。URL 打开仍走单独的系统操作确认。',
   intent: 'iOS 系统操作：支持 calendar、dial、sms_draft、share、navigate，以及 settings(page:"home") 打开 DSH Go 自身设置。最后一步由用户确认。不支持 alarm、timer、指定分享目标 App、其他系统设置页、GCJ-02 经纬度或 Android 地图选择；导航用 destination 和 drive/walk/transit。',
   notify: 'iOS：发布 DSH Go 本地通知，需要原生批准及系统通知权限。点通知只打开 App，不批准工具。',
   clipboard: 'iOS：读写文字剪贴板，需要前台原生批准；get:true 读取，set 写入。不要从后台读取，也不要用此工具绕过手机输入的确认或敏感输入限制。',
