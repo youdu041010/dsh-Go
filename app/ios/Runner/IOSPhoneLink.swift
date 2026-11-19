@@ -32,9 +32,11 @@ final class IOSPhoneLink: NSObject, FlutterStreamHandler, @preconcurrency UIDocu
   var enabled: Bool { defaults.bool(forKey: "dsh.ios.phone.link.enabled") }
   var isPreparing: Bool { operationID != nil }
   var xctestEnabled: Bool { defaults.bool(forKey: "dsh.ios.phone.xctest.enabled") }
+  private var configuresXCTestAsDefault: Bool {
+    Bundle.main.object(forInfoDictionaryKey: "DSHPhoneDefaultBackend") as? String == "xctest"
+  }
   var defaultBackend: String {
-    let configured = Bundle.main.object(forInfoDictionaryKey: "DSHPhoneDefaultBackend") as? String
-    return enabled && xctestEnabled && configured == "xctest" ? "xctest" : "coredevice"
+    enabled && xctestEnabled && configuresXCTestAsDefault ? "xctest" : "coredevice"
   }
   var appRoutes: [String: String] { defaults.dictionary(forKey: "dsh.ios.phone.app-routes") as? [String: String] ?? [:] }
   private var foreground: Bool {
@@ -150,8 +152,11 @@ final class IOSPhoneLink: NSObject, FlutterStreamHandler, @preconcurrency UIDocu
       }
       begin(reply) { [weak self] id in
         guard let self else { return ["ok": false, "code": "ERR_PHONE_CANCELLED"] }
+        let backendHint = self.configuresXCTestAsDefault
+          ? "启用后，本机开发者连接的新任务会优先使用 XCTest。"
+          : "默认仍是 CoreDevice，可在应用规则中选择。"
         let allowed = await self.ask(title: "启用 XCTest 增强？",
-          message: "需要另外安装并签名 PhoneRunner。它能提供元素树；部分应用可能要求重新登录或拒绝使用。默认仍是 CoreDevice，可在应用规则中选择。",
+          message: "需要另外安装并签名 PhoneRunner。它能提供元素树；部分应用可能要求重新登录或拒绝使用。\(backendHint)",
           choices: [("enable", "启用增强"), ("cancel", "取消")])
         guard allowed == "enable", self.current(id), self.foreground else { return self.answer(false, code: "ERR_PHONE_CANCELLED") }
         self.invalidate(); self.defaults.set(true, forKey: "dsh.ios.phone.xctest.enabled")
