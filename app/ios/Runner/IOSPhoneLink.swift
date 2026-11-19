@@ -32,6 +32,10 @@ final class IOSPhoneLink: NSObject, FlutterStreamHandler, @preconcurrency UIDocu
   var enabled: Bool { defaults.bool(forKey: "dsh.ios.phone.link.enabled") }
   var isPreparing: Bool { operationID != nil }
   var xctestEnabled: Bool { defaults.bool(forKey: "dsh.ios.phone.xctest.enabled") }
+  var defaultBackend: String {
+    let configured = Bundle.main.object(forInfoDictionaryKey: "DSHPhoneDefaultBackend") as? String
+    return enabled && xctestEnabled && configured == "xctest" ? "xctest" : "coredevice"
+  }
   var appRoutes: [String: String] { defaults.dictionary(forKey: "dsh.ios.phone.app-routes") as? [String: String] ?? [:] }
   private var foreground: Bool {
     UIApplication.shared.applicationState == .active && UIApplication.shared.isProtectedDataAvailable
@@ -72,7 +76,7 @@ final class IOSPhoneLink: NSObject, FlutterStreamHandler, @preconcurrency UIDocu
     if #available(iOS 17.0, *) { available = core.isAvailable } else { available = false }
     return [
       "schema": 1, "enabled": enabled, "buildAvailable": available,
-      "defaultBackend": "coredevice", "xctestEnabled": xctestEnabled, "appRoutes": appRoutes,
+      "defaultBackend": defaultBackend, "xctestEnabled": xctestEnabled, "appRoutes": appRoutes,
       "pairing": pairing.status(), "legacyPairingNeedsMigration": legacyPresent,
       "connection": core.state, "connected": core.isReady, "lastCheck": lastCheck,
       "ddiCache": cache.status(), "operationPending": operationID != nil, "progress": progress,
