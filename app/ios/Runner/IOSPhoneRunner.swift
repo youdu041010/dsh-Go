@@ -179,11 +179,13 @@ final class IOSPhoneRunner {
     let explicitApp = (plan.parameters["app"] as? String).flatMap { PhoneRunnerAppCatalog.bundleID(for: $0) }
     let preference = explicitApp.flatMap { link.appRoutes[$0] }
     let mustCore = preference == "coredevice"
-    let testTarget = Bundle.main.object(forInfoDictionaryKey: "DSHPhoneXCTestTestApp") as? String
-    let useXCTestForTest = link.enabled && link.xctestEnabled && method == .open
-      && testTarget != nil && explicitApp == testTarget
-    let mustXCTest = preference == "xctest" || (preference == nil && useXCTestForTest)
-    let chooseXCTest = mustXCTest || ((requiresObservation || method == .screen) && lastRoute == .xctest)
+    let mustXCTest = preference == "xctest"
+    let mayUseDefault = preference == nil
+      && (explicitApp != nil || !link.appRoutes.values.contains("coredevice"))
+    let startsOrContinuesObservation = method == .open || (!requiresObservation && lastRoute != .coredevice)
+    let chooseDefaultXCTest = link.defaultBackend == "xctest" && mayUseDefault && startsOrContinuesObservation
+    let chooseXCTest = mustXCTest || chooseDefaultXCTest
+      || ((requiresObservation || method == .screen) && lastRoute == .xctest)
     guard !chooseXCTest || link.xctestEnabled else { return .failure("XCTest 增强已关闭，没有启动或调用运行器。") }
     guard !mustCore || link.enabled else { return .failure("这个应用固定使用 CoreDevice，但本机连接已关闭。") }
     let returnTarget = needsTarget ? targetApplication : nil
